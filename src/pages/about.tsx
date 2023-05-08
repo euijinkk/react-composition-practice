@@ -1,15 +1,24 @@
 import { useRouter } from "next/router";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 export default function Page() {
   return (
-    <ErrorBoundary fallback={<ErrorPage />}>
-      <Suspense fallback={<Loading />}>
-        <UserGuard>
-          <Content />
-        </UserGuard>
-      </Suspense>
-    </ErrorBoundary>
+    <ToastProvider>
+      <ErrorBoundary fallback={<ErrorPage />}>
+        <Suspense fallback={<Loading />}>
+          <UserGuard>
+            <Content />
+          </UserGuard>
+        </Suspense>
+      </ErrorBoundary>
+    </ToastProvider>
   );
 }
 
@@ -34,16 +43,12 @@ function UserGuard({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function Content() {
-  // 유저 정보가 있으면, 좋아요 리스트를 가지고 오는 Query
-  const likeListQuery = useQuery(["likeList"], () => getLikeList(), {
-    suspense: true,
-  });
-
-  // 토스트 로직
+const ToastContext = createContext({ showToast(message: string) {} });
+const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [message, setMessage] = useState("");
-  const toastTimer = useRef<NodeJS.Timeout>();
   const [isOpenToast, setIsOpenToast] = useState(false);
+  const toastTimer = useRef<NodeJS.Timeout>();
+
   const showToast = (message: string) => {
     setIsOpenToast(true);
     setMessage(message);
@@ -58,6 +63,22 @@ function Content() {
     }, 3000);
     toastTimer.current = timer;
   };
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      {isOpenToast && <Toast message={message} />}
+    </ToastContext.Provider>
+  );
+};
+
+function Content() {
+  // 유저 정보가 있으면, 좋아요 리스트를 가지고 오는 Query
+  const likeListQuery = useQuery(["likeList"], () => getLikeList(), {
+    suspense: true,
+  });
+
+  const { showToast } = useContext(ToastContext);
 
   // Mount 시에 amplitude 를 활용한 page log 를 찍는다.
   useEffect(() => {
@@ -76,9 +97,6 @@ function Content() {
   return (
     <div>
       <button onClick={() => showToast("show toast")}>Show Toast!</button>
-      {isOpenToast && (
-        <Toast message={message} onClick={() => setIsOpenToast(false)} />
-      )}
     </div>
   );
 }
