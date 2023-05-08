@@ -1,12 +1,23 @@
 import { useRouter } from "next/router";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Page() {
+  return (
+    <ErrorBoundary fallback={<ErrorPage />}>
+      <Suspense fallback={<Loading />}>
+        <Content />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+function Content() {
   // 유저 정보를 가지고 오는 Query
-  const meQuery = useQuery(["me"], () => getMe());
+  const meQuery = useQuery(["me"], () => getMe(), { suspense: true });
   // 유저 정보가 있으면, 좋아요 리스트를 가지고 오는 Query
   const likeListQuery = useQuery(["likeList"], () => getLikeList(), {
     enable: meQuery.data != null,
+    suspense: true,
   });
 
   const router = useRouter();
@@ -50,16 +61,6 @@ export default function Page() {
       router.push("/login");
     }
   }, []);
-
-  // Query 로딩을 처리한다.
-  if (meQuery.isLoading || likeListQuery.isLoading) {
-    return <Loading />;
-  }
-
-  // Query 에러를 처리한다.
-  if (meQuery.isError || likeListQuery.isError) {
-    return <ErrorPage />;
-  }
 
   // 유저 정보가 없을 경우, Guard
   if (meQuery == null) {
