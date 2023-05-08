@@ -1,26 +1,44 @@
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 export default function Page() {
   return (
     <ErrorBoundary fallback={<ErrorPage />}>
       <Suspense fallback={<Loading />}>
-        <Content />
+        <UserGuard>
+          <Content />
+        </UserGuard>
       </Suspense>
     </ErrorBoundary>
   );
 }
 
-function Content() {
+function UserGuard({ children }: { children: ReactNode }) {
+  const router = useRouter();
+
   // 유저 정보를 가지고 오는 Query
   const meQuery = useQuery(["me"], () => getMe(), { suspense: true });
+
+  // 유저 정보가 없을 경우, Login 시키기
+  useEffect(() => {
+    if (meQuery == null) {
+      router.push("/login");
+    }
+  }, []);
+
+  // 유저 정보가 없을 경우, Guard
+  if (meQuery == null) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
+function Content() {
   // 유저 정보가 있으면, 좋아요 리스트를 가지고 오는 Query
   const likeListQuery = useQuery(["likeList"], () => getLikeList(), {
-    enable: meQuery.data != null,
     suspense: true,
   });
-
-  const router = useRouter();
 
   // 토스트 로직
   const [message, setMessage] = useState("");
@@ -55,18 +73,6 @@ function Content() {
     window.scrollTo({ top: 0 });
   }, []);
 
-  // 유저 정보가 없을 경우, Login 시키기
-  useEffect(() => {
-    if (meQuery == null) {
-      router.push("/login");
-    }
-  }, []);
-
-  // 유저 정보가 없을 경우, Guard
-  if (meQuery == null) {
-    return null;
-  }
-
   return (
     <div>
       <button onClick={() => showToast("show toast")}>Show Toast!</button>
@@ -76,5 +82,3 @@ function Content() {
     </div>
   );
 }
-
-function Toast() {}
