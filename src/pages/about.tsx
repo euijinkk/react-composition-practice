@@ -93,6 +93,15 @@ function LoggingPage({
   return <>{children}</>;
 }
 
+function ScrollToTop({ children }: { children: ReactNode }) {
+  // Mount 시에 scroll을 최상단까지 올린다.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  return <>{children}</>;
+}
+
 function Content() {
   // 유저 정보가 있으면, 좋아요 리스트를 가지고 오는 Query
   const likeListQuery = useQuery(["likeList"], () => getLikeList(), {
@@ -101,16 +110,13 @@ function Content() {
 
   const { showToast } = useContext(ToastContext);
 
-  // Mount 시에 scroll을 최상단까지 올린다.
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, []);
-
   return (
     <LoggingPage pageName="Home" pageTitle="My Awesome Website">
-      <div>
-        <button onClick={() => showToast("show toast")}>Show Toast!</button>
-      </div>
+      <ScrollToTop>
+        <div>
+          <button onClick={() => showToast("show toast")}>Show Toast!</button>
+        </div>
+      </ScrollToTop>
     </LoggingPage>
   );
 }
